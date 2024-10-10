@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Papers - Home</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to Past Papers</h1>
+        <!-- Search form -->
+        <form class="search-form" onsubmit="return searchFunction();">
+            <input type="text" id="searchInput" placeholder="Search...">
+            <button type="submit">Search</button>
+        </form>
+    </header>
+
+    <nav>
+        <ul>
+            <!--<li><a href="art&design.html">Art & Design (0400)</a></li>-->
+            <li><a href="biology.html">Biology (0610)</a></li>
+            <li><a href="business.html">Business Studies (0450)</a></li>
+            <li><a href="chemistry.html">Chemistry (0620)</a></li>
+            <!--<li><a href="computer.html">Computer Science (0478)</a></li>
+            <li><a href="drama.html">Drama (0411)</a></li>
+            <li><a href="economics.html">Economics (0455)</a></li>
+            <li><a href="design.html">Design & Technology (0455)</a></li>-->
+            <li><a href="english.html">English First Language (0500)</a></li>
+            <!--<li><a href="envi.html">Environmental Management (0680)</a></li>-->
+            <li><a href="geo.html">Geography (0460)</a></li>
+            <!-- <li><a href="global.html">Global Perspectives (0457)</a></li> -->
+            <li><a href="history.html">History (0470)</a></li>
+            <li><a href="ict.html">Information and Communication Technology (0417)</a></li>
+            <li><a href="Math.html">Mathematics (0580)</a></li>
+            <li><a href="Physic.html">Physics (0625)</a></li>
+           <!-- <li><a href="Rs.html">Religious Studies (2048)</a></li>
+        </ul>-->
+    </nav>
+
+    <script>
+        function searchFunction() {
+            var input = document.getElementById('searchInput').value.toLowerCase();
+            var links = document.querySelectorAll('nav ul li a');
+
+            // Loop through all the links and check if they match the search query
+            links.forEach(function(link) {
+                if (link.textContent.toLowerCase().includes(input)) {
+                    link.style.backgroundColor = 'yellow'; // Highlight matching link
+                    link.scrollIntoView(); // Scroll to the matched result
+                } else {
+                    link.style.backgroundColor = ''; // Remove highlight for non-matching results
+                }
+            });
+
+            return false; // Prevent form from reloading the page
+        }
+    </script>
+</body>
+</html>

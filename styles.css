@@ -1,0 +1,83 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: center; /* Center text and elements */
+}
+
+header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+}
+
+nav {
+    margin: 10px 0;
+}
+
+nav a {
+    display: block; /* Make each link a block element */
+    margin: 5px auto; /* Center each link with auto margins */
+    text-decoration: none;
+    color: #4CAF50;
+    padding: 15px; /* Increased padding for a larger click area */
+    font-size: 18px; /* Increased font size */
+    border: 1px solid #4CAF50; /* Optional: add a border */
+    border-radius: 5px; /* Optional: add rounded corners */
+    transition: background-color 0.3s; /* Smooth background change */
+    width: 200px; /* Fixed width for uniformity */
+}
+
+nav a:hover {
+    background-color: #45a049; /* Change background on hover */
+    color: white; /* Change text color on hover */
+}
+
+main {
+    padding: 20px;
+}
+
+ul {
+    list-style-type: none; /* Remove default list style */
+    padding: 0;
+}
+
+ul li {
+    margin: 10px 0; /* Space between list items */
+    font-size: 20px; /* Increased font size for list items */
+}
+
+footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: small;
+}
+ .search-form {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        .search-form input {
+            width: 300px; /* Increase the size of the search box */
+            height: 35px; /* Increase the height */
+            font-size: 18px; /* Bigger text inside */
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .search-form button {
+            height: 35px;
+            font-size: 18px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .search-form button:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
