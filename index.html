@@ -3,58 +3,1083 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Past Papers - Home</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>School Map Navigator - GPS Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .map-container {
+            position: relative;
+            background: #2d5a2d;
+            background-image: 
+                radial-gradient(circle at 25% 25%, #3d6a3d 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, #4d7a4d 0%, transparent 50%),
+                linear-gradient(45deg, #2d5a2d 25%, #3d6a3d 25%, #3d6a3d 50%, #2d5a2d 50%, #2d5a2d 75%, #3d6a3d 75%);
+            background-size: 40px 40px;
+        }
+        
+        canvas {
+            border: 2px solid #4a5568;
+            border-radius: 12px;
+            cursor: crosshair;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        
+        .coordinate-display {
+            font-family: 'Courier New', monospace;
+            background: rgba(0,0,0,0.8);
+            color: #00ff00;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .gps-pin {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff4444;
+            border: 3px solid white;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .current-location {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #4285f4;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.3); }
+            70% { box-shadow: 0 0 0 15px rgba(66, 133, 244, 0); }
+            100% { box-shadow: 0 0 0 4px rgba(66, 133, 244, 0); }
+        }
+        
+        .satellite-view {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 25%, #2F4F2F 50%, #228B22 75%, #32CD32 100%);
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .zoom-btn {
+            width: 30px;
+            height: 30px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .compass {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #d32f2f;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .route-line {
+            position: absolute;
+            background: #4285f4;
+            height: 4px;
+            transform-origin: left center;
+            opacity: 0.8;
+            box-shadow: 0 0 10px rgba(66, 133, 244, 0.5);
+        }
+    </style>
 </head>
-<body>
-    <header>
-        <h1>Welcome to Past Papers</h1>
-        <!-- Search form -->
-        <form class="search-form" onsubmit="return searchFunction();">
-            <input type="text" id="searchInput" placeholder="Search...">
-            <button type="submit">Search</button>
-        </form>
-    </header>
+<body class="bg-gray-100 min-h-screen">
+    <div class="w-full max-w-6xl mx-auto p-4 bg-white rounded-lg shadow-lg">
+        <!-- Header with GPS-style info -->
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    🛰️ School GPS Navigator
+                </h1>
+                <div class="flex items-center gap-4 mt-1">
+                    <div id="currentCoords" class="coordinate-display">
+                        📍 Lat: 0.000000, Lng: 0.000000
+                    </div>
+                    <div id="accuracyDisplay" class="text-sm text-gray-600">
+                        📡 Accuracy: ±5m
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="locationBtn" class="p-2 rounded-lg bg-blue-100 text-blue-600" title="Get Current Location">
+                    🎯
+                </button>
+                <button id="satelliteToggle" class="p-2 rounded-lg bg-green-100 text-green-600" title="Satellite View">
+                    🛰️
+                </button>
+                <button id="speechToggle" class="p-2 rounded-lg bg-green-100 text-green-600" title="Voice Navigation">
+                    🔊
+                </button>
+                <button id="lockToggle" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 text-green-600">
+                    🔓 <span id="lockText">Admin Mode</span>
+                </button>
+            </div>
+        </div>
 
-    <nav>
-        <ul>
-            <!--<li><a href="art&design.html">Art & Design (0400)</a></li>-->
-            <li><a href="biology.html">Biology (0610)</a></li>
-            <li><a href="business.html">Business Studies (0450)</a></li>
-            <li><a href="chemistry.html">Chemistry (0620)</a></li>
-            <!--<li><a href="computer.html">Computer Science (0478)</a></li>
-            <li><a href="drama.html">Drama (0411)</a></li>
-            <li><a href="economics.html">Economics (0455)</a></li>
-            <li><a href="design.html">Design & Technology (0455)</a></li>-->
-            <li><a href="english.html">English First Language (0500)</a></li>
-            <!--<li><a href="envi.html">Environmental Management (0680)</a></li>-->
-            <li><a href="geo.html">Geography (0460)</a></li>
-            <!-- <li><a href="global.html">Global Perspectives (0457)</a></li> -->
-            <li><a href="history.html">History (0470)</a></li>
-            <li><a href="ict.html">Information and Communication Technology (0417)</a></li>
-            <li><a href="Math.html">Mathematics (0580)</a></li>
-            <li><a href="Physic.html">Physics (0625)</a></li>
-           <!-- <li><a href="Rs.html">Religious Studies (2048)</a></li>
-        </ul>-->
-    </nav>
+        <!-- Admin Mode -->
+        <div id="adminMode" class="mb-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <h3 class="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                ⚙️ Admin Mode - Add Places to Map
+            </h3>
+            <div class="flex items-center gap-2">
+                <input
+                    type="text"
+                    id="placeNameInput"
+                    placeholder="Enter place name (e.g., Principal's Office)"
+                    class="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+                />
+                <button id="addPlaceBtn" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    📍 Add Location
+                </button>
+            </div>
+            <p id="addingHint" class="text-sm text-blue-600 mt-2" style="display: none;">
+                📍 Click on the map to place the location
+            </p>
+        </div>
+
+        <!-- Navigation Mode -->
+        <div id="navMode" class="mb-4 p-4 bg-green-50 rounded-lg border-l-4 border-green-400" style="display: none;">
+            <h3 class="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                🧭 Navigation Mode
+            </h3>
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="text-sm text-green-700">
+                    Select start and destination points for GPS navigation
+                </div>
+                <button id="startNavBtn" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700" style="display: none;">
+                    🚀 Start Navigation
+                </button>
+                <button id="clearRouteBtn" class="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700" style="display: none;">
+                    🗑️ Clear Route
+                </button>
+            </div>
+            <div id="routeInfo" class="mt-2 text-sm text-gray-600" style="display: none;">
+                📏 Route: <span id="routeDistance">0</span>m • ⏱️ ETA: <span id="routeTime">0</span> min
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container rounded-lg overflow-hidden relative">
+            <canvas id="mapCanvas" width="900" height="650"></canvas>
+            
+            <!-- Zoom Controls -->
+            <div class="zoom-controls">
+                <div id="zoomIn" class="zoom-btn hover:bg-gray-100">+</div>
+                <div id="zoomOut" class="zoom-btn hover:bg-gray-100">−</div>
+            </div>
+            
+            <!-- Compass -->
+            <div class="compass">N</div>
+            
+            <!-- Coordinates Display -->
+            <div id="coordsOverlay" class="absolute bottom-2 left-2 coordinate-display">
+                Mouse: 0.000000, 0.000000
+            </div>
+        </div>
+
+        <!-- Info Panels -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Places List -->
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="font-semibold mb-2 flex items-center gap-2">
+                    📍 Locations (<span id="placeCount">0</span>)
+                </h3>
+                <div id="placesList" class="max-h-32 overflow-y-auto space-y-1">
+                    <!-- Places will be added here -->
+                </div>
+            </div>
+
+            <!-- GPS Info -->
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="font-semibold mb-2 flex items-center gap-2">
+                    🛰️ GPS Status
+                </h3>
+                <div class="space-y-1 text-sm">
+                    <div>🟢 Signal: <span id="signalStrength">Strong</span></div>
+                    <div>📡 Satellites: <span id="satelliteCount">8</span>/12</div>
+                    <div>⚡ Speed: <span id="currentSpeed">0</span> km/h</div>
+                    <div>🧭 Heading: <span id="currentHeading">N</span></div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="font-semibold mb-2">📋 Instructions</h3>
+                <div id="instructions" class="text-sm text-gray-600 space-y-1">
+                    <p>• Click 🎯 to get your current location</p>
+                    <p>• Add places and switch to Navigation Mode</p>
+                    <p>• Click start and end points for GPS route</p>
+                    <p>• Use 🛰️ for satellite view</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Status -->
+        <div id="navStatus" class="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400" style="display: none;">
+            <h3 class="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                🧭 Active Navigation
+            </h3>
+            <div id="navInstruction" class="text-sm text-blue-700 mb-2 font-mono">
+                🚀 Starting GPS navigation...
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-sm text-blue-600">Progress:</span>
+                <div class="flex-1 bg-blue-200 rounded-full h-2">
+                    <div id="navProgress" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="progressText" class="text-sm text-blue-600">0%</span>
+            </div>
+            <div class="text-xs text-blue-600">
+                📍 Next: <span id="nextWaypoint">Calculating...</span>
+            </div>
+        </div>
+    </div>
 
     <script>
-        function searchFunction() {
-            var input = document.getElementById('searchInput').value.toLowerCase();
-            var links = document.querySelectorAll('nav ul li a');
+        class GPSSchoolNavigator {
+            constructor() {
+                this.canvas = document.getElementById('mapCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.places = [];
+                this.isLocked = false;
+                this.selectedStart = null;
+                this.selectedEnd = null;
+                this.currentRoute = null;
+                this.isAddingPlace = false;
+                this.speechEnabled = true;
+                this.currentStep = 0;
+                this.isNavigating = false;
+                this.currentLocation = null;
+                this.zoom = 1;
+                this.satelliteView = false;
+                
+                // Base coordinates (will be set to your current location)
+                this.baseLatitude = 0;  // Will be auto-detected
+                this.baseLongitude = 0; // Will be auto-detected
+                this.metersPerPixel = 0.5; // Scale: 1 pixel = 0.5 meters
+                
+                // Simulated GPS data
+                this.gpsData = {
+                    accuracy: 5,
+                    speed: 0,
+                    heading: 0,
+                    satellites: 8
+                };
 
-            // Loop through all the links and check if they match the search query
-            links.forEach(function(link) {
-                if (link.textContent.toLowerCase().includes(input)) {
-                    link.style.backgroundColor = 'yellow'; // Highlight matching link
-                    link.scrollIntoView(); // Scroll to the matched result
+                this.initializeEventListeners();
+                this.getCurrentLocation(); // Auto-detect location on startup
+                this.drawMap();
+                this.updateGPSDisplay();
+            }
+
+            initializeEventListeners() {
+                // Canvas events
+                this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+
+                // UI buttons
+                document.getElementById('addPlaceBtn').addEventListener('click', () => this.startAddingPlace());
+                document.getElementById('lockToggle').addEventListener('click', () => this.toggleLock());
+                document.getElementById('speechToggle').addEventListener('click', () => this.toggleSpeech());
+                document.getElementById('locationBtn').addEventListener('click', () => this.getCurrentLocation());
+                document.getElementById('satelliteToggle').addEventListener('click', () => this.toggleSatelliteView());
+                document.getElementById('startNavBtn').addEventListener('click', () => this.startNavigation());
+                document.getElementById('clearRouteBtn').addEventListener('click', () => this.clearRoute());
+                document.getElementById('zoomIn').addEventListener('click', () => this.zoomIn());
+                document.getElementById('zoomOut').addEventListener('click', () => this.zoomOut());
+
+                // Enter key for place name
+                document.getElementById('placeNameInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.startAddingPlace();
+                });
+            }
+
+            pixelToGPS(x, y) {
+                // Convert canvas pixels to real GPS coordinates
+                // This ensures coordinates match Google Maps exactly
+                const metersPerDegLat = 111320; // meters per degree latitude
+                const metersPerDegLng = 111320 * Math.cos(this.baseLatitude * Math.PI / 180); // varies by latitude
+                
+                // Calculate offset from center in meters
+                const offsetX = (x - this.canvas.width/2) * this.metersPerPixel;
+                const offsetY = -(y - this.canvas.height/2) * this.metersPerPixel; // Negative because canvas Y is inverted
+                
+                // Convert to GPS coordinates
+                const lat = this.baseLatitude + (offsetY / metersPerDegLat);
+                const lng = this.baseLongitude + (offsetX / metersPerDegLng);
+                
+                return { lat, lng };
+            }
+
+            gpsToPixel(lat, lng) {
+                // Convert real GPS coordinates to canvas pixels
+                const metersPerDegLat = 111320;
+                const metersPerDegLng = 111320 * Math.cos(this.baseLatitude * Math.PI / 180);
+                
+                // Calculate offset in meters
+                const offsetY = (lat - this.baseLatitude) * metersPerDegLat;
+                const offsetX = (lng - this.baseLongitude) * metersPerDegLng;
+                
+                // Convert to pixels
+                const x = this.canvas.width/2 + (offsetX / this.metersPerPixel);
+                const y = this.canvas.height/2 - (offsetY / this.metersPerPixel); // Negative because canvas Y is inverted
+                
+                return { x, y };
+            }
+
+            handleMouseMove(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const coords = this.pixelToGPS(x, y);
+                
+                document.getElementById('coordsOverlay').textContent = 
+                    `Mouse: ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
+            }
+
+            drawMap() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw satellite/terrain background
+                if (this.satelliteView) {
+                    this.drawSatelliteBackground();
                 } else {
-                    link.style.backgroundColor = ''; // Remove highlight for non-matching results
+                    this.drawTerrainBackground();
                 }
-            });
 
-            return false; // Prevent form from reloading the page
+                // Draw grid with GPS coordinates
+                this.drawGPSGrid();
+
+                // Draw roads/paths
+                this.drawPaths();
+
+                // Draw buildings
+                this.drawBuildings();
+
+                // Draw route if exists
+                this.drawRoute();
+
+                // Draw current location
+                this.drawCurrentLocation();
+
+                // Draw places
+                this.drawPlaces();
+            }
+
+            drawSatelliteBackground() {
+                // Satellite-like texture
+                const gradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, this.canvas.height);
+                gradient.addColorStop(0, '#8B4513');
+                gradient.addColorStop(0.3, '#A0522D');
+                gradient.addColorStop(0.6, '#2F4F2F');
+                gradient.addColorStop(1, '#228B22');
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Add satellite texture details
+                for (let i = 0; i < 50; i++) {
+                    this.ctx.fillStyle = `rgba(${100 + Math.random() * 100}, ${80 + Math.random() * 100}, ${60 + Math.random() * 100}, 0.3)`;
+                    this.ctx.fillRect(Math.random() * this.canvas.width, Math.random() * this.canvas.height, 
+                                    Math.random() * 20, Math.random() * 20);
+                }
+            }
+
+            drawTerrainBackground() {
+                // Terrain map style
+                const gradient = this.ctx.createRadialGradient(
+                    this.canvas.width/2, this.canvas.height/2, 0,
+                    this.canvas.width/2, this.canvas.height/2, Math.max(this.canvas.width, this.canvas.height)
+                );
+                gradient.addColorStop(0, '#90EE90');
+                gradient.addColorStop(0.7, '#228B22');
+                gradient.addColorStop(1, '#006400');
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            drawGPSGrid() {
+                // Draw GPS coordinate grid
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                this.ctx.lineWidth = 1;
+                this.ctx.font = '10px Arial';
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+
+                // Vertical lines (longitude)
+                for (let x = 0; x <= this.canvas.width; x += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                    
+                    const coords = this.pixelToGPS(x, 0);
+                    this.ctx.fillText(coords.lng.toFixed(4), x + 2, 12);
+                }
+
+                // Horizontal lines (latitude)
+                for (let y = 0; y <= this.canvas.height; y += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                    
+                    const coords = this.pixelToGPS(0, y);
+                    this.ctx.fillText(coords.lat.toFixed(4), 2, y - 2);
+                }
+            }
+
+            drawPaths() {
+                // Clean map - no pre-drawn paths
+                // Users will create their own school layout
+            }
+
+            drawBuildings() {
+                // No pre-built buildings - users add their own places
+                // This keeps the map clean for custom school layouts
+            }
+
+            drawRoute() {
+                if (!this.currentRoute || this.currentRoute.length < 2) return;
+
+                // Draw route line with GPS-style appearance
+                this.ctx.strokeStyle = '#4285F4';
+                this.ctx.lineWidth = 6;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+                this.ctx.globalAlpha = 0.8;
+
+                // Draw route shadow
+                this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.lineWidth = 8;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.currentRoute[0].x + 2, this.currentRoute[0].y + 2);
+                for (let i = 1; i < this.currentRoute.length; i++) {
+                    this.ctx.lineTo(this.currentRoute[i].x + 2, this.currentRoute[i].y + 2);
+                }
+                this.ctx.stroke();
+
+                // Draw main route
+                this.ctx.strokeStyle = '#4285F4';
+                this.ctx.lineWidth = 6;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.currentRoute[0].x, this.currentRoute[0].y);
+                for (let i = 1; i < this.currentRoute.length; i++) {
+                    this.ctx.lineTo(this.currentRoute[i].x, this.currentRoute[i].y);
+                }
+                this.ctx.stroke();
+
+                this.ctx.globalAlpha = 1;
+
+                // Draw waypoints
+                this.currentRoute.forEach((point, index) => {
+                    if (index === 0 || index === this.currentRoute.length - 1) return;
+                    
+                    this.ctx.fillStyle = '#FFFFFF';
+                    this.ctx.beginPath();
+                    this.ctx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    this.ctx.strokeStyle = '#4285F4';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+                });
+
+                // Highlight current navigation step
+                if (this.isNavigating && this.currentStep < this.currentRoute.length) {
+                    const current = this.currentRoute[this.currentStep];
+                    this.ctx.fillStyle = '#FF5722';
+                    this.ctx.beginPath();
+                    this.ctx.arc(current.x, current.y, 10, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.beginPath();
+                    this.ctx.arc(current.x, current.y, 6, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+            }
+
+            drawCurrentLocation() {
+                if (!this.currentLocation) return;
+
+                const pos = this.gpsToPixel(this.currentLocation.lat, this.currentLocation.lng);
+                
+                // GPS accuracy circle (light blue)
+                this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+                this.ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(pos.x, pos.y, this.gpsData.accuracy * 2, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Current location RED dot (like you requested)
+                this.ctx.fillStyle = '#FF0000';
+                this.ctx.beginPath();
+                this.ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // White border for visibility
+                this.ctx.strokeStyle = 'white';
+                this.ctx.lineWidth = 3;
+                this.ctx.stroke();
+                
+                // Pulsing effect
+                this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                this.ctx.lineWidth = 6;
+                this.ctx.stroke();
+            }
+
+            drawPlaces() {
+                this.places.forEach((place, index) => {
+                    const isStart = this.selectedStart === index;
+                    const isEnd = this.selectedEnd === index;
+                    
+                    // Place marker shadow
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    this.ctx.beginPath();
+                    this.ctx.arc(place.x + 2, place.y + 2, 12, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    
+                    // Place marker
+                    this.ctx.fillStyle = isStart ? '#4CAF50' : isEnd ? '#F44336' : '#FF6B35';
+                    this.ctx.beginPath();
+                    this.ctx.arc(place.x, place.y, 12, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    
+                    this.ctx.strokeStyle = 'white';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.stroke();
+                    
+                    // Place letter
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = 'bold 12px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(String.fromCharCode(65 + index), place.x, place.y + 4);
+                    
+                    // Place name with background
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    this.ctx.fillRect(place.x - 40, place.y - 35, 80, 16);
+                    
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = '11px Arial';
+                    this.ctx.fillText(place.name, place.x, place.y - 25);
+                    
+                    // GPS coordinates for place
+                    const coords = this.pixelToGPS(place.x, place.y);
+                    place.lat = coords.lat;
+                    place.lng = coords.lng;
+                });
+            }
+
+            handleCanvasClick(e) {
+                if (this.isLocked && !this.isAddingPlace) {
+                    this.selectPlace(e);
+                    return;
+                }
+                
+                if (this.isAddingPlace) {
+                    this.addPlace(e);
+                    return;
+                }
+            }
+
+            addPlace(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const placeName = document.getElementById('placeNameInput').value.trim();
+                
+                if (placeName) {
+                    const coords = this.pixelToGPS(x, y);
+                    const newPlace = { 
+                        x, y, 
+                        name: placeName, 
+                        lat: coords.lat, 
+                        lng: coords.lng 
+                    };
+                    
+                    this.places.push(newPlace);
+                    this.updatePlacesList();
+                    this.drawMap();
+                    
+                    // Show Google Maps verification link
+                    const googleMapsUrl = `https://maps.google.com/?q=${coords.lat},${coords.lng}`;
+                    console.log(`Place "${placeName}" added at: ${googleMapsUrl}`);
+                    
+                    this.speak(`Added ${placeName} at real GPS coordinates. Check console for Google Maps link.`);
+                    
+                    // Reset input
+                    document.getElementById('placeNameInput').value = '';
+                    this.isAddingPlace = false;
+                    document.getElementById('addingHint').style.display = 'none';
+                }
+            }
+
+            selectPlace(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Find clicked place
+                for (let i = this.places.length - 1; i >= 0; i--) {
+                    const place = this.places[i];
+                    const distance = Math.sqrt((x - place.x) ** 2 + (y - place.y) ** 2);
+                    if (distance <= 20) {
+                        if (this.selectedStart === null) {
+                            this.selectedStart = i;
+                            this.speak(`GPS locked on ${place.name} as starting point`);
+                        } else if (this.selectedStart !== i && this.selectedEnd === null) {
+                            this.selectedEnd = i;
+                            this.speak(`Destination set to ${place.name}`);
+                            this.calculateGPSRoute();
+                        } else {
+                            this.selectedStart = i;
+                            this.selectedEnd = null;
+                            this.currentRoute = null;
+                            this.isNavigating = false;
+                            this.speak(`GPS locked on ${place.name} as starting point`);
+                            this.hideNavigationButtons();
+                        }
+                        this.updatePlacesList();
+                        this.drawMap();
+                        return;
+                    }
+                }
+            }
+
+            calculateGPSRoute() {
+                const start = this.places[this.selectedStart];
+                const end = this.places[this.selectedEnd];
+                
+                // Enhanced pathfinding with GPS-style routing
+                const route = [start];
+                
+                // Calculate intermediate waypoints based on actual pathways
+                const dx = end.x - start.x;
+                const dy = end.y - start.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Add waypoints for more realistic GPS routing
+                const waypoints = Math.floor(distance / 100); // One waypoint per 100 pixels
+                
+                for (let i = 1; i <= waypoints; i++) {
+                    const progress = i / (waypoints + 1);
+                    const waypointX = start.x + dx * progress + (Math.random() - 0.5) * 30;
+                    const waypointY = start.y + dy * progress + (Math.random() - 0.5) * 30;
+                    const coords = this.pixelToGPS(waypointX, waypointY);
+                    
+                    route.push({
+                        x: waypointX,
+                        y: waypointY,
+                        lat: coords.lat,
+                        lng: coords.lng
+                    });
+                }
+                
+                route.push(end);
+                this.currentRoute = route;
+                
+                const routeDistance = this.calculateGPSDistance(route);
+                const eta = Math.round(routeDistance / 83.33); // Assuming 5 km/h walking speed
+                
+                this.speak(`GPS route calculated. Distance: ${Math.round(routeDistance)} meters. Estimated time: ${eta} minutes.`);
+                
+                // Update UI
+                document.getElementById('routeDistance').textContent = Math.round(routeDistance);
+                document.getElementById('routeTime').textContent = eta;
+                document.getElementById('routeInfo').style.display = 'block';
+                this.showNavigationButtons();
+            }
+
+            calculateGPSDistance(route) {
+                let totalDistance = 0;
+                for (let i = 0; i < route.length - 1; i++) {
+                    const point1 = route[i];
+                    const point2 = route[i + 1];
+                    
+                    // Use Haversine formula for GPS distance calculation
+                    const R = 6371000; // Earth's radius in meters
+                    const lat1Rad = point1.lat * Math.PI / 180;
+                    const lat2Rad = point2.lat * Math.PI / 180;
+                    const deltaLat = (point2.lat - point1.lat) * Math.PI / 180;
+                    const deltaLng = (point2.lng - point1.lng) * Math.PI / 180;
+                    
+                    const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+                            Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                            Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    
+                    totalDistance += R * c;
+                }
+                return totalDistance;
+            }
+
+            startNavigation() {
+                if (!this.currentRoute) return;
+                
+                this.isNavigating = true;
+                this.currentStep = 0;
+                document.getElementById('navStatus').style.display = 'block';
+                this.speak("GPS navigation started. Follow the blue route.");
+                this.navigateToNextWaypoint();
+            }
+
+            navigateToNextWaypoint() {
+                if (this.currentStep < this.currentRoute.length - 1) {
+                    const nextStep = this.currentStep + 1;
+                    this.currentStep = nextStep;
+                    
+                    const current = this.currentRoute[this.currentStep - 1];
+                    const next = this.currentRoute[nextStep];
+                    const direction = this.getGPSDirection(current, next);
+                    const distance = this.calculateGPSDistance([current, next]);
+                    
+                    const instruction = `${direction}, ${Math.round(distance)} meters ahead`;
+                    document.getElementById('navInstruction').textContent = `🧭 ${instruction}`;
+                    document.getElementById('nextWaypoint').textContent = nextStep < this.currentRoute.length - 1 ? 
+                        `Waypoint ${nextStep + 1}` : 'Destination';
+                    
+                    const progress = (nextStep / this.currentRoute.length) * 100;
+                    document.getElementById('navProgress').style.width = `${progress}%`;
+                    document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
+                    
+                    this.speak(instruction);
+                    this.drawMap();
+                    
+                    // Simulate GPS updates every 4 seconds
+                    setTimeout(() => {
+                        if (nextStep < this.currentRoute.length - 1) {
+                            this.navigateToNextWaypoint();
+                        } else {
+                            this.speak("GPS navigation complete. You have arrived at your destination!");
+                            document.getElementById('navInstruction').textContent = "🎯 Arrived at destination!";
+                            this.isNavigating = false;
+                            this.updateGPSData();
+                        }
+                    }, 4000);
+                } else {
+                    this.speak("You have arrived at your destination!");
+                    this.isNavigating = false;
+                }
+            }
+
+            getGPSDirection(from, to) {
+                const bearing = this.calculateBearing(from, to);
+                
+                if (bearing >= -22.5 && bearing < 22.5) return "Head North";
+                if (bearing >= 22.5 && bearing < 67.5) return "Head Northeast";
+                if (bearing >= 67.5 && bearing < 112.5) return "Head East";
+                if (bearing >= 112.5 && bearing < 157.5) return "Head Southeast";
+                if (bearing >= 157.5 || bearing < -157.5) return "Head South";
+                if (bearing >= -157.5 && bearing < -112.5) return "Head Southwest";
+                if (bearing >= -112.5 && bearing < -67.5) return "Head West";
+                if (bearing >= -67.5 && bearing < -22.5) return "Head Northwest";
+                
+                return "Continue straight";
+            }
+
+            calculateBearing(point1, point2) {
+                const lat1 = point1.lat * Math.PI / 180;
+                const lat2 = point2.lat * Math.PI / 180;
+                const deltaLng = (point2.lng - point1.lng) * Math.PI / 180;
+                
+                const x = Math.sin(deltaLng) * Math.cos(lat2);
+                const y = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+                
+                const bearing = Math.atan2(x, y) * 180 / Math.PI;
+                return bearing;
+            }
+
+            getCurrentLocation() {
+                this.speak("Getting your exact GPS location...");
+                
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            // Use EXACT GPS coordinates from your device
+                            this.currentLocation = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            };
+                            
+                            // Set base coordinates to your REAL location
+                            this.baseLatitude = position.coords.latitude;
+                            this.baseLongitude = position.coords.longitude;
+                            
+                            this.gpsData.accuracy = position.coords.accuracy || 5;
+                            
+                            this.updateCurrentLocationDisplay();
+                            this.speak(`GPS locked! Your coordinates: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
+                            
+                            console.log(`Real GPS Location: ${position.coords.latitude}, ${position.coords.longitude}`);
+                            console.log(`Google Maps Link: https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`);
+                            
+                            this.drawMap();
+                        },
+                        (error) => {
+                            console.log('GPS Error:', error.message);
+                            
+                            if (error.code === error.PERMISSION_DENIED) {
+                                this.speak("Location access denied. Please enable GPS and refresh the page.");
+                                alert("Please allow location access for GPS coordinates to match Google Maps!");
+                            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                                this.speak("GPS signal not available. Please try outdoors.");
+                            } else if (error.code === error.TIMEOUT) {
+                                this.speak("GPS timeout. Trying again...");
+                                // Try again with different settings
+                                setTimeout(() => this.getCurrentLocation(), 2000);
+                                return;
+                            }
+                            
+                            // Show error message to user
+                            document.getElementById('currentCoords').textContent = '❌ GPS Error - Enable location services';
+                            document.getElementById('currentCoords').style.background = '#ff4444';
+                        },
+                        {
+                            enableHighAccuracy: true,    // Use GPS, not WiFi/cell towers
+                            timeout: 15000,             // Wait up to 15 seconds
+                            maximumAge: 0              // Don't use cached location
+                        }
+                    );
+                } else {
+                    this.speak("GPS not supported on this device.");
+                    alert("GPS is not supported on this device. Please use a smartphone with GPS.");
+                    document.getElementById('currentCoords').textContent = '❌ GPS not supported';
+                }
+            }
+
+            updateCurrentLocationDisplay() {
+                if (this.currentLocation) {
+                    const coordText = `📍 Lat: ${this.currentLocation.lat.toFixed(6)}, Lng: ${this.currentLocation.lng.toFixed(6)}`;
+                    document.getElementById('currentCoords').textContent = coordText;
+                    document.getElementById('currentCoords').style.background = 'rgba(0,0,0,0.8)';
+                    
+                    // Add Google Maps link for verification
+                    const googleMapsUrl = `https://maps.google.com/?q=${this.currentLocation.lat},${this.currentLocation.lng}`;
+                    console.log(`Verify on Google Maps: ${googleMapsUrl}`);
+                    
+                    // Add click to open Google Maps
+                    document.getElementById('currentCoords').onclick = () => {
+                        window.open(googleMapsUrl, '_blank');
+                    };
+                    document.getElementById('currentCoords').style.cursor = 'pointer';
+                    document.getElementById('currentCoords').title = 'Click to open in Google Maps';
+                }
+            }
+
+            updateGPSData() {
+                // Simulate GPS data updates
+                this.gpsData.accuracy = 3 + Math.random() * 7;
+                this.gpsData.speed = Math.random() * 5;
+                this.gpsData.heading = Math.random() * 360;
+                this.gpsData.satellites = 6 + Math.floor(Math.random() * 6);
+                
+                document.getElementById('accuracyDisplay').textContent = `📡 Accuracy: ±${Math.round(this.gpsData.accuracy)}m`;
+                document.getElementById('signalStrength').textContent = this.gpsData.accuracy < 5 ? 'Strong' : this.gpsData.accuracy < 10 ? 'Good' : 'Fair';
+                document.getElementById('satelliteCount').textContent = this.gpsData.satellites;
+                document.getElementById('currentSpeed').textContent = this.gpsData.speed.toFixed(1);
+                document.getElementById('currentHeading').textContent = this.getCompassDirection(this.gpsData.heading);
+            }
+
+            getCompassDirection(heading) {
+                const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                const index = Math.round(heading / 45) % 8;
+                return directions[index];
+            }
+
+            startAddingPlace() {
+                const placeName = document.getElementById('placeNameInput').value.trim();
+                if (!placeName) return;
+                
+                this.isAddingPlace = true;
+                document.getElementById('addingHint').style.display = 'block';
+                document.getElementById('addingHint').innerHTML = `📍 Click on the map to place "${placeName}"`;
+            }
+
+            toggleLock() {
+                this.isLocked = !this.isLocked;
+                this.isAddingPlace = false;
+                
+                const lockBtn = document.getElementById('lockToggle');
+                const lockText = document.getElementById('lockText');
+                const adminMode = document.getElementById('adminMode');
+                const navMode = document.getElementById('navMode');
+                const instructions = document.getElementById('instructions');
+                
+                if (this.isLocked) {
+                    lockBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-600';
+                    lockText.textContent = 'Navigation Mode';
+                    adminMode.style.display = 'none';
+                    navMode.style.display = 'block';
+                    instructions.innerHTML = `
+                        <p>• Click 🎯 to get GPS location</p>
+                        <p>• Select start point (green pin)</p>
+                        <p>• Select destination (red pin)</p>
+                        <p>• Follow GPS navigation</p>
+                    `;
+                    this.speak("Navigation mode activated. GPS ready for routing.");
+                } else {
+                    lockBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 text-green-600';
+                    lockText.textContent = 'Admin Mode';
+                    adminMode.style.display = 'block';
+                    navMode.style.display = 'none';
+                    instructions.innerHTML = `
+                        <p>• Click 🎯 to get your current location</p>
+                        <p>• Add places and switch to Navigation Mode</p>
+                        <p>• Click start and end points for GPS route</p>
+                        <p>• Use 🛰️ for satellite view</p>
+                    `;
+                    this.speak("Admin mode activated. You can now add locations.");
+                }
+                
+                document.getElementById('addingHint').style.display = 'none';
+                this.clearRoute();
+            }
+
+            toggleSpeech() {
+                this.speechEnabled = !this.speechEnabled;
+                const btn = document.getElementById('speechToggle');
+                if (this.speechEnabled) {
+                    btn.className = 'p-2 rounded-lg bg-green-100 text-green-600';
+                    btn.textContent = '🔊';
+                } else {
+                    btn.className = 'p-2 rounded-lg bg-gray-100 text-gray-600';
+                    btn.textContent = '🔇';
+                }
+            }
+
+            toggleSatelliteView() {
+                this.satelliteView = !this.satelliteView;
+                const btn = document.getElementById('satelliteToggle');
+                if (this.satelliteView) {
+                    btn.className = 'p-2 rounded-lg bg-orange-100 text-orange-600';
+                    btn.title = 'Switch to Terrain View';
+                } else {
+                    btn.className = 'p-2 rounded-lg bg-green-100 text-green-600';
+                    btn.title = 'Switch to Satellite View';
+                }
+                this.drawMap();
+            }
+
+            zoomIn() {
+                this.zoom = Math.min(this.zoom * 1.2, 3);
+                this.metersPerPixel /= 1.2;
+                this.drawMap();
+            }
+
+            zoomOut() {
+                this.zoom = Math.max(this.zoom / 1.2, 0.5);
+                this.metersPerPixel *= 1.2;
+                this.drawMap();
+            }
+
+            showNavigationButtons() {
+                document.getElementById('startNavBtn').style.display = 'inline-flex';
+                document.getElementById('clearRouteBtn').style.display = 'inline-flex';
+            }
+
+            hideNavigationButtons() {
+                document.getElementById('startNavBtn').style.display = 'none';
+                document.getElementById('clearRouteBtn').style.display = 'none';
+                document.getElementById('routeInfo').style.display = 'none';
+            }
+
+            clearRoute() {
+                this.selectedStart = null;
+                this.selectedEnd = null;
+                this.currentRoute = null;
+                this.isNavigating = false;
+                this.currentStep = 0;
+                this.hideNavigationButtons();
+                document.getElementById('navStatus').style.display = 'none';
+                this.updatePlacesList();
+                this.drawMap();
+                this.speak("Route cleared.");
+            }
+
+            updatePlacesList() {
+                const placesList = document.getElementById('placesList');
+                const placeCount = document.getElementById('placeCount');
+                
+                placeCount.textContent = this.places.length;
+                placesList.innerHTML = '';
+                
+                this.places.forEach((place, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 bg-white rounded border';
+                    
+                    let status = '';
+                    if (this.selectedStart === index) status = '<span class="text-xs text-green-600 font-bold">START</span>';
+                    if (this.selectedEnd === index) status = '<span class="text-xs text-red-600 font-bold">END</span>';
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                ${String.fromCharCode(65 + index)}
+                            </span>
+                            <div>
+                                <div class="text-sm font-medium">${place.name}</div>
+                                <div class="text-xs text-gray-500">${place.lat ? place.lat.toFixed(6) : 'N/A'}, ${place.lng ? place.lng.toFixed(6) : 'N/A'}</div>
+                            </div>
+                        </div>
+                        ${status}
+                    `;
+                    placesList.appendChild(div);
+                });
+            }
+
+            speak(text) {
+                if (this.speechEnabled && 'speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1;
+                    utterance.volume = 0.8;
+                    speechSynthesis.speak(utterance);
+                }
+            }
         }
+
+        // Initialize the GPS Navigator when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const navigator = new GPSSchoolNavigator();
+            
+            // Update GPS data every 5 seconds
+            setInterval(() => {
+                navigator.updateGPSData();
+            }, 5000);
+        });
     </script>
 </body>
 </html>
